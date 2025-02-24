@@ -324,30 +324,33 @@ public:
    * returns an iterator pointing to the inserted value.
    */
   iterator insert(iterator pos, const T &value) {
+    const size_t ind = pos.ptr - vector_data;
     if (vector_size == vector_capacity) {
       doubleSpace();
     }
-    vector_data[vector_size] = new T(value);
     vector_size++;
-    iterator it = end();
-    --it;
-    while (it != pos) {
-      *it = *(it - 1);
-      --it;
+    size_t i = vector_size - 1;
+    while (i != ind) {
+      *(vector_data + i) = *(vector_data + i - 1);
+      i--;
     }
     iterator temp(pos);
     ++pos;
     *temp = value;
     return temp;
+    /*
+    vector_data[vector_size] = new T(value);
+    vector_size++;
+    for (auto it = vector_data + vector_size - 1; it != pos.ptr; --it) {
+      *it = *(it - 1);
+    }
+    iterator temp(pos);
+    ++pos;
+    *temp = value;
+    return temp;
+    */
   }
 
-  /**
-   * inserts value at index ind.
-   * after inserting, this->at(ind) == value
-   * returns an iterator pointing to the inserted value.
-   * throw index_out_of_bound if ind > size (in this situation ind can be size
-   * because after inserting the size will increase 1.)
-   */
   iterator insert(const size_t &ind, const T &value) {
     if (ind > vector_size) {
       throw index_out_of_bound();
@@ -368,24 +371,15 @@ public:
     return temp;
   }
 
-  /**
-   * removes the element at pos.
-   * return an iterator pointing to the following element.
-   * If the iterator pos refers the last element, the end() iterator is
-   * returned.
-   */
   iterator erase(iterator pos) {
-    iterator it(pos);
-    ++it;
-    while (it != end()) {
-      *(it - 1) = *it;
-      ++it;
+    delete *pos.ptr;
+    for (auto it = pos.ptr; it != vector_data + vector_size - 1; ++it) {
+      *it = *(it + 1);
     }
-    vector_size--;
-    delete vector_data[vector_size];
+    --vector_size;
     vector_data[vector_size] = nullptr;
-    iterator temp(pos);
-    ++temp;
+    iterator temp;
+    temp.ptr = pos.ptr + 1;
     return temp;
   }
 
@@ -401,7 +395,7 @@ public:
     vector_size--;
     size_t i = ind;
     while (i != vector_size) {
-      *vector_data[i] = *vector_data[i + 1];
+      *(vector_data + i) = *(vector_data + i + 1);
       i++;
     }
     delete vector_data[vector_size];
