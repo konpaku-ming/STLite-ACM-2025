@@ -106,7 +106,7 @@ public:
     using reference = T &;
     using iterator_category = std::output_iterator_tag;
 
-    const T **c_ptr = nullptr;
+    T **c_ptr = nullptr;
 
     const_iterator() = default;
 
@@ -176,6 +176,7 @@ public:
     }
   };
 
+public:
   vector() {
     vector_data = nullptr;
     vector_size = 0;
