@@ -243,19 +243,12 @@ public:
     if (pos >= vector_size) {
       throw index_out_of_bound();
     }
-    const T res = *vector_data[pos];
-    return res;
+    return *vector_data[pos];
   }
 
-  const T &front() const {
-    const T res = *vector_data[0];
-    return res;
-  }
+  const T &front() const { return *vector_data[0]; }
 
-  const T &back() const {
-    const T res = *vector_data[vector_size - 1];
-    return res;
-  }
+  const T &back() const { return *vector_data[vector_size - 1]; }
 
   /**
    * returns an iterator to the beginning.
@@ -315,7 +308,6 @@ private:
     }
     delete[] vector_data;
     vector_data = new_data;
-    new_data = nullptr;
   }
 
 public:
