@@ -5,6 +5,7 @@
 
 #include <climits>
 #include <cstddef>
+#include <memory>
 
 namespace sjtu {
 /**
@@ -13,9 +14,11 @@ namespace sjtu {
  */
 template <typename T> class vector {
 public:
-  T **vector_data = nullptr;
-  size_t vector_size = 0;
-  size_t vector_capacity = 0;
+  T *start = nullptr;
+  T *finish = nullptr;
+  T *storage_end = nullptr;
+  std::allocator<T> alloc;
+  using trait = std::allocator_traits<std::allocator<T>>;
 
   class const_iterator;
 
@@ -27,7 +30,7 @@ public:
     using reference = T &;
     using iterator_category = std::output_iterator_tag;
 
-    T **ptr = nullptr;
+    T *ptr = nullptr;
 
     iterator() = default;
 
@@ -82,7 +85,7 @@ public:
       return *this;
     }
 
-    T &operator*() const { return **ptr; }
+    T &operator*() const { return *ptr; }
 
     bool operator==(const iterator &rhs) const { return ptr == rhs.ptr; }
 
@@ -106,7 +109,7 @@ public:
     using reference = T &;
     using iterator_category = std::output_iterator_tag;
 
-    T **c_ptr = nullptr;
+    T *c_ptr = nullptr;
 
     const_iterator() = default;
 
@@ -161,7 +164,7 @@ public:
       return *this;
     }
 
-    const T &operator*() const { return **c_ptr; }
+    const T &operator*() const { return *c_ptr; }
 
     bool operator==(const iterator &rhs) const { return c_ptr == rhs.ptr; }
 
@@ -178,37 +181,45 @@ public:
 
 public:
   vector() {
-    vector_data = nullptr;
-    vector_size = 0;
-    vector_capacity = 0;
+    start = nullptr;
+    finish = nullptr;
+    storage_end = nullptr;
   }
 
   vector(const vector &other) {
-    vector_capacity = other.vector_capacity;
-    vector_size = other.vector_size;
-    vector_data = new T *[vector_capacity] { nullptr };
-    for (size_t i = 0; i < vector_size; i++) {
-      vector_data[i] = new T(*other.vector_data[i]);
+    size_t _capacity = other.storage_end - other.start;
+    size_t _size = other.size();
+    start = alloc.allocate(_capacity);
+    finish = start + other.size();
+    for (size_t i = 0; i < _size; i++) {
+      start[i] = other.start[i];
     }
   }
 
   ~vector() {
-    for (size_t i = 0; i < vector_size; i++) {
-      delete vector_data[i];
-      vector_data[i] = nullptr;
+    for (size_t i = 0; i < size(); i++) {
+      trait::destroy(alloc, start + i);
     }
-    delete[] vector_data;
+    trait::deallocate(alloc, start, storage_end - start);
+    start = nullptr;
+    finish = nullptr;
+    storage_end = nullptr;
   }
 
   vector &operator=(const vector &other) {
-    if (other.vector_data == vector_data) {
+    if (this == &other) {
       return *this;
     }
-    vector_capacity = other.vector_capacity;
-    vector_size = other.vector_size;
-    vector_data = new T *[vector_capacity] { nullptr };
-    for (int i = 0; i < vector_size; i++) {
-      vector_data[i] = new T(*other.vector_data[i]);
+    for (size_t i = 0; i < size(); i++) {
+      trait::destroy(alloc, start + i);
+    }
+    trait::deallocate(alloc, start, storage_end - start);
+    size_t _capacity = other.storage_end - other.start;
+    size_t _size = other.size();
+    start = trait::allocate(alloc, _capacity);
+    finish = start + other.size();
+    for (size_t i = 0; i < _size; i++) {
+      trait::construct(alloc, start + i, other.start[i]);
     }
     return *this;
   }
@@ -218,105 +229,107 @@ public:
    * throw index_out_of_bound if pos is not in [0, size)
    */
   T &at(const size_t &pos) {
-    if (pos >= vector_size) {
+    if (pos >= size() || pos < 0) {
       throw index_out_of_bound();
     }
-    return *vector_data[pos];
+    return start[pos];
   }
 
   const T &at(const size_t &pos) const {
-    if (pos >= vector_size) {
+    if (pos >= size() || pos < 0) {
       throw index_out_of_bound();
     }
-    const T res = *vector_data[pos];
-    return res;
+    return start[pos];
   }
 
   T &operator[](const size_t &pos) {
-    if (pos >= vector_size) {
+    if (pos >= size() || pos < 0) {
       throw index_out_of_bound();
     }
-    return *vector_data[pos];
+    return start[pos];
   }
 
   const T &operator[](const size_t &pos) const {
-    if (pos >= vector_size) {
+    if (pos >= size() || pos < 0) {
       throw index_out_of_bound();
     }
-    return *vector_data[pos];
+    return start[pos];
   }
 
-  const T &front() const { return *vector_data[0]; }
+  const T &front() const { return *start; }
 
-  const T &back() const { return *vector_data[vector_size - 1]; }
+  const T &back() const { return *(finish - 1); }
 
   /**
    * returns an iterator to the beginning.
    */
   iterator begin() {
     iterator begin_it;
-    begin_it.ptr = vector_data;
+    begin_it.ptr = start;
     return begin_it;
   }
 
   const_iterator begin() const {
     const_iterator begin_it;
-    begin_it.c_ptr = vector_data;
+    begin_it.c_ptr = start;
     return begin_it;
   }
 
   const_iterator cbegin() const {
     const_iterator cbegin_it;
-    cbegin_it.c_ptr = vector_data;
+    cbegin_it.c_ptr = start;
     return cbegin_it;
   }
 
   iterator end() {
     iterator end_it;
-    end_it.ptr = vector_data + vector_size;
+    end_it.ptr = finish;
     return end_it;
   }
 
   const_iterator end() const {
     const_iterator end_it;
-    end_it.c_ptr = vector_data + vector_size;
+    end_it.c_ptr = finish;
     return end_it;
   }
 
   const_iterator cend() const {
     const_iterator end_it;
-    end_it.c_ptr = vector_data + vector_size;
+    end_it.c_ptr = finish;
     return end_it;
   }
 
   /**
    * checks whether the container is empty
    */
-  bool empty() const { return vector_size == 0; }
+  bool empty() const { return start == finish; }
 
   /**
    * returns the number of elements
    */
-  size_t size() const { return vector_size; }
+  size_t size() const { return finish - start; }
 
 private:
   void doubleSpace() {
-    vector_capacity = (vector_capacity + 1) * 2;
-    T **new_data = new T *[vector_capacity] { nullptr };
-    for (size_t i = 0; i < vector_size; i++) {
-      new_data[i] = vector_data[i];
+    size_t _capacity = finish - start;
+    size_t _size = size();
+    size_t new_capacity = (_capacity + 1) * 2;
+    T *temp = trait::allocate(alloc, new_capacity);
+    for (size_t i = 0; i < _size; i++) {
+      trait::construct(alloc, temp + i, start[i]);
     }
-    delete[] vector_data;
-    vector_data = new_data;
+    trait::deallocate(alloc, start, _capacity);
+    start = temp;
+    finish = start + _size;
+    storage_end = start + new_capacity;
   }
 
 public:
   void clear() {
-    for (int i = 0; i < vector_size; i++) {
-      delete vector_data[i];
-      vector_data[i] = nullptr;
-    }
-    vector_size = 0;
+    trait::deallocate(alloc, start, storage_end - start);
+    start = nullptr;
+    finish = nullptr;
+    storage_end = nullptr;
   }
 
   /**
@@ -324,63 +337,44 @@ public:
    * returns an iterator pointing to the inserted value.
    */
   iterator insert(iterator pos, const T &value) {
-    const size_t ind = pos.ptr - vector_data;
-    if (vector_size == vector_capacity) {
+    if (finish == storage_end) {
+      size_t ind = pos.ptr - start;
       doubleSpace();
+      pos.ptr = start + ind;
     }
-    vector_size++;
-    size_t i = vector_size - 1;
-    while (i != ind) {
-      *(vector_data + i) = *(vector_data + i - 1);
-      i--;
-    }
-    iterator temp(pos);
-    ++pos;
-    *temp = value;
-    return temp;
-    /*
-    vector_data[vector_size] = new T(value);
-    vector_size++;
-    for (auto it = vector_data + vector_size - 1; it != pos.ptr; --it) {
+    trait::construct(alloc, finish, *(finish - 1));
+    for (auto it = finish - 1; it != pos.ptr; --it) {
       *it = *(it - 1);
     }
-    iterator temp(pos);
-    ++pos;
-    *temp = value;
-    return temp;
-    */
+    *pos = value;
+    ++finish;
+    return pos;
   }
 
   iterator insert(const size_t &ind, const T &value) {
-    if (ind > vector_size) {
+    if (ind > size()) {
       throw index_out_of_bound();
     }
-    if (vector_size == vector_capacity) {
+    if (finish == storage_end) {
       doubleSpace();
     }
-    vector_data[vector_size] = new T(value);
-    vector_size++;
-    size_t i = vector_size - 1;
-    while (i != ind) {
-      *vector_data[i] = *vector_data[i - 1];
-      i--;
+    iterator pos;
+    pos.ptr = start + ind;
+    trait::construct(alloc, finish, *(finish - 1));
+    for (auto it = finish - 1; it != pos.ptr; --it) {
+      *it = *(it - 1);
     }
-    *vector_data[ind] = value;
-    iterator temp;
-    temp.ptr = vector_data + ind;
-    return temp;
+    *pos = value;
+    ++finish;
+    return pos;
   }
 
   iterator erase(iterator pos) {
-    delete *pos.ptr;
-    for (auto it = pos.ptr; it != vector_data + vector_size - 1; ++it) {
+    --finish;
+    for (auto it = pos.ptr; it != finish; ++it) {
       *it = *(it + 1);
     }
-    --vector_size;
-    vector_data[vector_size] = nullptr;
-    iterator temp;
-    temp.ptr = pos.ptr + 1;
-    return temp;
+    return pos;
   }
 
   /**
@@ -389,33 +383,27 @@ public:
    * throw index_out_of_bound if ind >= size
    */
   iterator erase(const size_t &ind) {
-    if (ind >= vector_size) {
+    if (ind >= size()) {
       throw index_out_of_bound();
     }
-    vector_size--;
-    size_t i = ind;
-    while (i != vector_size) {
-      *(vector_data + i) = *(vector_data + i + 1);
-      i++;
+    iterator pos;
+    pos.ptr = start + ind;
+    --finish;
+    for (auto it = pos.ptr; it != finish; ++it) {
+      *it = *(it + 1);
     }
-    delete vector_data[vector_size];
-    iterator temp;
-    temp.ptr = vector_data + ind + 1;
-    return temp;
+    return pos;
   }
 
   /**
    * adds an element to the end.
    */
   void push_back(const T &value) {
-    if (vector_size < vector_capacity) {
-      vector_data[vector_size] = new T(value);
-      vector_size++;
-      return;
+    if (finish == storage_end) {
+      doubleSpace();
     }
-    doubleSpace();
-    vector_data[vector_size] = new T(value);
-    vector_size++;
+    trait::construct(alloc, finish, value);
+    ++finish;
   }
 
   /**
@@ -425,11 +413,8 @@ public:
   void pop_back() {
     if (empty()) {
       throw container_is_empty();
-    } else {
-      delete vector_data[vector_size - 1];
-      vector_data[vector_size - 1] = nullptr;
-      vector_size--;
     }
+    --finish;
   }
 };
 } // namespace sjtu
