@@ -5,6 +5,7 @@
 
 #include <climits>
 #include <cstddef>
+#include <iostream>
 #include <memory>
 
 namespace sjtu {
@@ -102,7 +103,6 @@ public:
 
   class const_iterator {
   public:
-    friend iterator;
     using difference_type = std::ptrdiff_t;
     using value_type = T;
     using pointer = T *;
@@ -189,10 +189,10 @@ public:
   vector(const vector &other) {
     size_t _capacity = other.storage_end - other.start;
     size_t _size = other.size();
-    start = alloc.allocate(_capacity);
-    finish = start + other.size();
+    start = trait::allocate(alloc, _capacity);
+    finish = start + _size;
     for (size_t i = 0; i < _size; i++) {
-      start[i] = other.start[i];
+      trait::construct(alloc, start + i, other.start[i]);
     }
   }
 
@@ -200,7 +200,7 @@ public:
     for (size_t i = 0; i < size(); i++) {
       trait::destroy(alloc, start + i);
     }
-    trait::deallocate(alloc, start, storage_end - start);
+    trait::deallocate(alloc, start, 1);
     start = nullptr;
     finish = nullptr;
     storage_end = nullptr;
@@ -311,7 +311,7 @@ public:
 
 private:
   void doubleSpace() {
-    size_t _capacity = finish - start;
+    size_t _capacity = storage_end - start;
     size_t _size = size();
     size_t new_capacity = (_capacity + 1) * 2;
     T *temp = trait::allocate(alloc, new_capacity);
