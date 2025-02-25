@@ -191,6 +191,7 @@ public:
     size_t _size = other.size();
     start = trait::allocate(alloc, _capacity);
     finish = start + _size;
+    storage_end = start + _capacity;
     for (size_t i = 0; i < _size; i++) {
       trait::construct(alloc, start + i, other.start[i]);
     }
@@ -200,7 +201,7 @@ public:
     for (size_t i = 0; i < size(); i++) {
       trait::destroy(alloc, start + i);
     }
-    trait::deallocate(alloc, start, 1);
+    trait::deallocate(alloc, start, storage_end - start);
     start = nullptr;
     finish = nullptr;
     storage_end = nullptr;
@@ -214,10 +215,12 @@ public:
       trait::destroy(alloc, start + i);
     }
     trait::deallocate(alloc, start, storage_end - start);
+    start = nullptr;
     size_t _capacity = other.storage_end - other.start;
     size_t _size = other.size();
     start = trait::allocate(alloc, _capacity);
-    finish = start + other.size();
+    finish = start + _size;
+    storage_end = start + _capacity;
     for (size_t i = 0; i < _size; i++) {
       trait::construct(alloc, start + i, other.start[i]);
     }
@@ -317,6 +320,7 @@ private:
     T *temp = trait::allocate(alloc, new_capacity);
     for (size_t i = 0; i < _size; i++) {
       trait::construct(alloc, temp + i, start[i]);
+      trait::destroy(alloc, start + i);
     }
     trait::deallocate(alloc, start, _capacity);
     start = temp;
@@ -326,7 +330,9 @@ private:
 
 public:
   void clear() {
-    trait::deallocate(alloc, start, storage_end - start);
+    for (size_t i = 0; i < size(); i++) {
+      trait::destroy(alloc, start + i);
+    }
     start = nullptr;
     finish = nullptr;
     storage_end = nullptr;
@@ -342,7 +348,8 @@ public:
       doubleSpace();
       pos.ptr = start + ind;
     }
-    trait::construct(alloc, finish, *(finish - 1));
+    if (finish != start)
+      trait::construct(alloc, finish, *(finish - 1));
     for (auto it = finish - 1; it != pos.ptr; --it) {
       *it = *(it - 1);
     }
@@ -374,6 +381,7 @@ public:
     for (auto it = pos.ptr; it != finish; ++it) {
       *it = *(it + 1);
     }
+    trait::destroy(alloc, finish);
     return pos;
   }
 
@@ -392,6 +400,7 @@ public:
     for (auto it = pos.ptr; it != finish; ++it) {
       *it = *(it + 1);
     }
+    trait::destroy(alloc, finish);
     return pos;
   }
 
@@ -415,6 +424,7 @@ public:
       throw container_is_empty();
     }
     --finish;
+    trait::destroy(alloc, finish);
   }
 };
 } // namespace sjtu
