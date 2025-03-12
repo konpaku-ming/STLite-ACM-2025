@@ -53,12 +53,11 @@ class priority_queue {
      * @brief deconstructor
      */
 
-    void DeleteHeap(Node *&a) {
+    void DeleteHeap(Node *a) {
         if (a == nullptr) return;
         DeleteHeap(a->child);
         DeleteHeap(a->sibling);
         delete a;
-        a = nullptr;
     }
 
     ~priority_queue() {
@@ -74,6 +73,8 @@ class priority_queue {
         if (this == &other) {
             return *this;
         }
+        DeleteHeap(root);
+        root = nullptr;
         queue_size = other.queue_size;
         HeapCopy(root, other.root);
         return *this;
@@ -124,6 +125,7 @@ class priority_queue {
         if (empty()) throw container_is_empty();
         queue_size--;
         Node *temp = Merges(root->child);
+        delete root;
         root = temp;
     }
 
@@ -151,7 +153,9 @@ class priority_queue {
      */
     void merge(priority_queue &other) {
         queue_size += other.queue_size;
-        Meld(root, other.root);
+        root = Meld(root, other.root);
+        other.queue_size = 0;
+        other.root = nullptr;
     }
 
    public:

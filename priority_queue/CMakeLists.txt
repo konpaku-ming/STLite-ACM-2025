@@ -1,3 +1,4 @@
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/data)
 add_executable(pq_one ${CMAKE_CURRENT_SOURCE_DIR}/data/one/code.cpp)
@@ -5,6 +6,7 @@ add_executable(pq_two ${CMAKE_CURRENT_SOURCE_DIR}/data/two/code.cpp)
 add_executable(pq_three ${CMAKE_CURRENT_SOURCE_DIR}/data/three/code.cpp)
 add_executable(pq_four ${CMAKE_CURRENT_SOURCE_DIR}/data/four/code.cpp)
 add_executable(pq_five ${CMAKE_CURRENT_SOURCE_DIR}/data/five/code.cpp)
+add_executable(pq_one_mem ${CMAKE_CURRENT_SOURCE_DIR}/data/one.memcheck/code.cpp)
 add_test(NAME pq_one COMMAND sh -c "${CMAKE_CURRENT_BINARY_DIR}/pq_one >/tmp/one_out.txt\
         && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/data/one/answer.txt /tmp/one_out.txt>/tmp/one_diff.txt")
 add_test(NAME pq_two COMMAND sh -c "${CMAKE_CURRENT_BINARY_DIR}/pq_two >/tmp/two_out.txt\
