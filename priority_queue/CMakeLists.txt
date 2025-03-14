@@ -6,6 +6,7 @@ add_executable(pq_two ${CMAKE_CURRENT_SOURCE_DIR}/data/two/code.cpp)
 add_executable(pq_three ${CMAKE_CURRENT_SOURCE_DIR}/data/three/code.cpp)
 add_executable(pq_four ${CMAKE_CURRENT_SOURCE_DIR}/data/four/code.cpp)
 add_executable(pq_five ${CMAKE_CURRENT_SOURCE_DIR}/data/five/code.cpp)
+add_executable(pq_six ${CMAKE_CURRENT_SOURCE_DIR}/data/six/code.cpp)
 add_executable(pq_one_mem ${CMAKE_CURRENT_SOURCE_DIR}/data/one.memcheck/code.cpp)
 add_test(NAME pq_one COMMAND sh -c "${CMAKE_CURRENT_BINARY_DIR}/pq_one >/tmp/one_out.txt\
         && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/data/one/answer.txt /tmp/one_out.txt>/tmp/one_diff.txt")
@@ -17,3 +18,5 @@ add_test(NAME pq_four COMMAND sh -c "${CMAKE_CURRENT_BINARY_DIR}/pq_four >/tmp/f
         && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/data/four/answer.txt /tmp/four_out.txt>/tmp/four_diff.txt")
 add_test(NAME pq_five COMMAND sh -c "${CMAKE_CURRENT_BINARY_DIR}/pq_five >/tmp/five_out.txt\
         && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/data/five/answer.txt /tmp/five_out.txt>/tmp/five_diff.txt")
+add_test(NAME pq_six COMMAND sh -c "${CMAKE_CURRENT_BINARY_DIR}/pq_six >/tmp/six_out.txt\
+        && diff -u ${CMAKE_CURRENT_SOURCE_DIR}/data/six/answer.txt /tmp/six_out.txt>/tmp/six_diff.txt")

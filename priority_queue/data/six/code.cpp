@@ -1,39 +1,47 @@
+#include <cassert>
+#include <climits>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
-#include <climits>
+
 #include "priority_queue.hpp"
 
 int A = 325, B = 2336, last = 233, mod = 1000007;
 
-int Rand(){
+int Rand() {
     return last = (A * last + B) % mod;
 }
 
 struct TestData {
     int value;
-    TestData(int v) : value(v) {}
-    TestData() : value(0) {}
+    TestData(int v) : value(v) {
+    }
+    TestData() : value(0) {
+    }
 };
 
-bool operator==(const TestData &a, const TestData &b) {
+bool operator==(const TestData& a, const TestData& b) {
     return a.value == b.value;
 }
 
-const int TRIGGER_VALUE = 100; // Specific value to trigger exception
+const int TRIGGER_VALUE = 100;  // Specific value to trigger exception
 
-bool force_exception = false; // Global flag, if true, FaultyCompare unconditionally throws exception
+bool force_exception = false;  // Global flag, if true, FaultyCompare
+                               // unconditionally throws exception
 
-// Faulty comparator: throws exception when any value to compare equals TRIGGER_VALUE, or global flag force_exception is true
+// Faulty comparator: throws exception when any value to compare equals
+// TRIGGER_VALUE, or global flag force_exception is true
 struct FaultyCompare {
-    bool operator()(const TestData &a, const TestData &b) const {
-        if (force_exception || a.value == TRIGGER_VALUE || b.value == TRIGGER_VALUE)
+    bool operator()(const TestData& a, const TestData& b) const {
+        if (force_exception || a.value == TRIGGER_VALUE ||
+            b.value == TRIGGER_VALUE)
             throw sjtu::runtime_error();
         return a.value < b.value;
     }
 };
 
-std::vector<int> copyQueueState(sjtu::priority_queue<TestData, FaultyCompare> pq) {
+std::vector<int> copyQueueState(
+    sjtu::priority_queue<TestData, FaultyCompare> pq) {
     std::vector<int> state;
     while (!pq.empty()) {
         state.push_back(pq.top().value);
@@ -80,13 +88,15 @@ bool test2() {
             pq.push(TestData(val));
         }
     } catch (const std::exception& e) {
-        std::cout << "test2: Unexpected exception during setup: " << e.what() << std::endl;
+        std::cout << "test2: Unexpected exception during setup: " << e.what()
+                  << std::endl;
         return false;
     }
 
     std::vector<int> originalState = copyQueueState(pq);
 
     sjtu::priority_queue<TestData, FaultyCompare> pq_rebuilt = pq;
+
 
     bool exceptionCaught = false;
     try {
@@ -99,27 +109,26 @@ bool test2() {
         std::cout << "test2: Exception not thrown when expected" << std::endl;
         return false;
     }
-
     std::vector<int> newState = copyQueueState(pq_rebuilt);
+
     if (originalState != newState) {
         std::cout << "test2: Queue state changed after exception" << std::endl;
         return false;
     }
-
     return true;
 }
 
 bool test3() {
     // Test 3: Test pop when Compare throws exception
     sjtu::priority_queue<TestData, FaultyCompare> pq;
-
     try {
         for (int i = 0; i < 100; i++) {
             int val = Rand() % 90 + 1;
             pq.push(TestData(val));
         }
     } catch (const std::exception& e) {
-        std::cout << "test3: Unexpected exception during setup: " << e.what() << std::endl;
+        std::cout << "test3: Unexpected exception during setup: " << e.what()
+                  << std::endl;
         return false;
     }
 
@@ -141,14 +150,13 @@ bool test3() {
         std::cout << "test3: Exception not thrown when expected" << std::endl;
         return false;
     }
-
     std::vector<int> newState = copyQueueState(pq_rebuilt);
     if (originalState != newState) {
         std::cout << "test3: Queue state changed after exception" << std::endl;
         return false;
     }
-
     return true;
+    assert(false);
 }
 
 bool test4() {
@@ -165,7 +173,8 @@ bool test4() {
             pq2.push(TestData(val));
         }
     } catch (const std::exception& e) {
-        std::cout << "test4: Unexpected exception during setup: " << e.what() << std::endl;
+        std::cout << "test4: Unexpected exception during setup: " << e.what()
+                  << std::endl;
         return false;
     }
 
@@ -194,12 +203,14 @@ bool test4() {
     std::vector<int> newState2 = copyQueueState(pq2_rebuilt);
 
     if (originalState1 != newState1) {
-        std::cout << "test4: First queue state changed after exception" << std::endl;
+        std::cout << "test4: First queue state changed after exception"
+                  << std::endl;
         return false;
     }
 
     if (originalState2 != newState2) {
-        std::cout << "test4: Second queue state changed after exception" << std::endl;
+        std::cout << "test4: Second queue state changed after exception"
+                  << std::endl;
         return false;
     }
 
@@ -207,7 +218,8 @@ bool test4() {
 }
 
 bool test5() {
-    // Test 5: Verify that after exceptions, queue can perform normal push/pop operations
+    // Test 5: Verify that after exceptions, queue can perform normal push/pop
+    // operations
     sjtu::priority_queue<TestData, FaultyCompare> pq;
 
     try {
@@ -216,7 +228,8 @@ bool test5() {
             pq.push(TestData(val));
         }
     } catch (const std::exception& e) {
-        std::cout << "test5: Unexpected exception during setup: " << e.what() << std::endl;
+        std::cout << "test5: Unexpected exception during setup: " << e.what()
+                  << std::endl;
         return false;
     }
 
@@ -238,7 +251,8 @@ bool test5() {
         while (!pq_rebuilt.empty()) {
             int curr = pq_rebuilt.top().value;
             if (curr > prev) {
-                std::cout << "test5: Heap property violated after recovery!" << std::endl;
+                std::cout << "test5: Heap property violated after recovery!"
+                          << std::endl;
                 return false;
             }
             prev = curr;
@@ -247,18 +261,16 @@ bool test5() {
 
         return true;
     } catch (const std::exception& e) {
-        std::cout << "test5: Exception during normal operations after recovery: " << e.what() << std::endl;
+        std::cout
+            << "test5: Exception during normal operations after recovery: "
+            << e.what() << std::endl;
         return false;
     }
 }
 
 int main() {
     int score = 0;
-    if (test1()
-        && test2()
-        && test3()
-        && test4()
-        && test5()) {
+    if (test1() && test2() && test3() && test4() && test5()) {
         score = 1;
     }
     std::cout << score << std::endl;

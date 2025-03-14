@@ -110,10 +110,10 @@ class priority_queue {
      */
     void push(const T &e) {
         auto tmp = root;
-        queue_size++;
         Node *new_node = new Node(e);
         try {
             root = Meld(root, new_node);
+            queue_size++;
         } catch (...) {
             root = tmp;
             delete new_node;
@@ -125,12 +125,14 @@ class priority_queue {
         if (x == nullptr || x->sibling == nullptr) return x;
         Node *y = x->sibling;
         Node *z = y->sibling;
-        auto tmp = x->sibling;
+        auto tmp1 = x->sibling;
+        auto tmp2 = y->sibling;
         x->sibling = y->sibling = nullptr;
         try {
             return Meld(Merges(z), Meld(x, y));
         } catch (...) {
-            x->sibling = tmp;
+            x->sibling = tmp1;
+            x->sibling->sibling = tmp2;
             throw runtime_error();
         }
     }
