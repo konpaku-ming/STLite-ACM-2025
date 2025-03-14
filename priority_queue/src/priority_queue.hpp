@@ -20,6 +20,7 @@ class priority_queue {
     struct Node {
         T value;
         Node *child = nullptr, *sibling = nullptr;
+
         Node(T val) : value(val) {
         }
     };
@@ -93,10 +94,14 @@ class priority_queue {
     Node *Meld(Node *a, Node *b) {
         if (a == nullptr) return b;
         if (b == nullptr) return a;
-        if (Compare{}(a->value, b->value)) std::swap(a, b);
-        b->sibling = a->child;
-        a->child = b;
-        return a;
+        try {
+            if (Compare{}(a->value, b->value)) std::swap(a, b);
+            b->sibling = a->child;
+            a->child = b;
+            return a;
+        } catch (...) {
+            throw runtime_error();
+        }
     }
 
     /**
@@ -104,17 +109,30 @@ class priority_queue {
      * @param e the element to be pushed
      */
     void push(const T &e) {
+        auto tmp = root;
         queue_size++;
         Node *new_node = new Node(e);
-        root = Meld(root, new_node);
+        try {
+            root = Meld(root, new_node);
+        } catch (...) {
+            root = tmp;
+            delete new_node;
+            throw runtime_error();
+        }
     }
 
     Node *Merges(Node *x) {
         if (x == nullptr || x->sibling == nullptr) return x;
         Node *y = x->sibling;
         Node *z = y->sibling;
+        auto tmp = x->sibling;
         x->sibling = y->sibling = nullptr;
-        return Meld(Merges(z), Meld(x, y));
+        try {
+            return Meld(Merges(z), Meld(x, y));
+        } catch (...) {
+            x->sibling = tmp;
+            throw runtime_error();
+        }
     }
 
     /**
@@ -123,10 +141,14 @@ class priority_queue {
      */
     void pop() {
         if (empty()) throw container_is_empty();
-        queue_size--;
-        Node *temp = Merges(root->child);
-        delete root;
-        root = temp;
+        try {
+            Node *temp = Merges(root->child);
+            queue_size--;
+            delete root;
+            root = temp;
+        } catch (...) {
+            throw runtime_error();
+        }
     }
 
     /**
@@ -152,10 +174,14 @@ class priority_queue {
      * @param other the priority_queue to be merged.
      */
     void merge(priority_queue &other) {
-        queue_size += other.queue_size;
-        root = Meld(root, other.root);
-        other.queue_size = 0;
-        other.root = nullptr;
+        try {
+            root = Meld(root, other.root);
+            queue_size += other.queue_size;
+            other.queue_size = 0;
+            other.root = nullptr;
+        } catch (...) {
+            throw runtime_error();
+        }
     }
 
    public:
